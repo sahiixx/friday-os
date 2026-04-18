@@ -80,15 +80,17 @@ class Planner:
     def __init__(self, llm: LLMProvider | None = None) -> None:
         self.llm = llm
 
-    def create_plan(self, request: str, suggested_tools: list[str] | None = None) -> Plan:
+    def create_plan(self, request: str, suggested_tools: list[str] | None = None,
+                    allowed_tools: list[str] | None = None) -> Plan:
         if self.llm and self.llm.is_available():
             try:
-                return self._llm_plan(request, suggested_tools or [])
+                return self._llm_plan(request, suggested_tools or [], allowed_tools)
             except Exception:
                 pass
         return self._heuristic_plan(request, suggested_tools)
 
-    def _llm_plan(self, request: str, suggested_tools: list[str]) -> Plan:
+    def _llm_plan(self, request: str, suggested_tools: list[str],
+                  allowed_tools: list[str] | None) -> Plan:
         hint = f"\nAvailable tools: {', '.join(suggested_tools)}" if suggested_tools else ""
         prompt = f"{PLANNER_PROMPT}{hint}\n\nUser request:\n{request}"
         resp = self.llm.chat([{"role": "user", "content": prompt}], max_tokens=1024)
@@ -96,7 +98,13 @@ class Planner:
         if not match:
             raise ValueError(f"planner: no JSON in {resp.text[:120]!r}")
         data = json.loads(match.group())
-        steps = [PlanStep(id=s["id"], action=s.get("action", ""), tool=s.get("tool"),
+        # WHY: small local LLMs invent plausible-sounding tool names
+        # ("text_to_speech_tool", "browse_web"). If the name isn't in the actual
+        # registry, null it out so the executor routes to reasoning and the
+        # tool_calls audit trail stays truthful.
+        allow = set(allowed_tools) if allowed_tools is not None else None
+        steps = [PlanStep(id=s["id"], action=s.get("action", ""),
+                          tool=_valid_tool(s.get("tool"), allow),
                           input_template=s.get("input_template", ""),
                           depends_on=s.get("depends_on", [])) for s in data.get("steps", [])]
         return Plan(intent=data.get("intent", request), complexity=data.get("complexity", "medium"),
@@ -110,3 +118,13 @@ class Planner:
                                     input_template=request)],
                     success_criteria="Return a direct answer.",
                     risks=["No LLM planner; single-step fallback."])
+
+
+def _valid_tool(name: object, allow: set[str] | None) -> str | None:
+    # WHY: when the planner hallucinates a tool ("text_to_speech_tool") this
+    # collapses it to None so the executor reasons instead of lying in audit.
+    if name in (None, "", "null"):
+        return None
+    if allow is None:
+        return str(name)
+    return str(name) if name in allow else None

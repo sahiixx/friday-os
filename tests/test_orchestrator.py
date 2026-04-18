@@ -5,12 +5,15 @@ from friday.core.orchestrator import Orchestrator, OrchestratorConfig
 
 class TestOrchestratorRun:
     def test_conversational_short_query(self):
+        # Conversational chat takes the fast-path (single LLM call, no plan).
+        # This is intentional: plan→execute→synthesize costs 3-4x latency on
+        # local models for simple "hello".
         orch = Orchestrator(config=OrchestratorConfig(verbose=False))
         r = orch.run("hello")
         assert r.success is True
         assert r.intent == "CONVERSATIONAL"
-        assert r.plan is not None
-        assert len(r.plan.steps) >= 1
+        assert r.plan is None
+        assert isinstance(r.output, str) and r.output
 
     def test_agentic_routes_through_tools(self):
         orch = Orchestrator()

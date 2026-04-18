@@ -56,10 +56,18 @@ class Orchestrator:
         try:
             decision = self.router.classify(query)
             self._log("ROUTE", f"{decision.intent_class} conf={decision.confidence}")
-            plan = self.planner.create_plan(query, suggested_tools=decision.suggested_tools)
+            # WHY: chat queries don't need plan→execute→synthesize. One direct
+            # LLM call cuts llama3.1:8b latency from ~60s (3-4 calls) to ~15s.
+            if not decision.requires_planning:
+                return self._fast_chat(query, decision, t0)
+            plan = self.planner.create_plan(
+                query, suggested_tools=decision.suggested_tools,
+                allowed_tools=self.tools.names(),
+            )
             self._log("PLAN", plan.summary())
             tool_calls = self._execute_plan(plan, query)
             output = self._synthesize(query, plan)
+            self._remember(query, output)
             return OrchestratorResponse(
                 query=query, intent=decision.intent_class, plan=plan, output=output,
                 tool_calls=tool_calls, elapsed_ms=(time.time() - t0) * 1000,
@@ -71,6 +79,32 @@ class Orchestrator:
                 output=f"Error: {exc}", elapsed_ms=(time.time() - t0) * 1000,
                 success=False, error=str(exc),
             )
+
+    def _fast_chat(self, query: str, decision: RouterDecision,
+                   t0: float) -> OrchestratorResponse:
+        if not self.llm.is_available():
+            output = f"[conversational fallback] {query}"
+        else:
+            resp = self.llm.chat([{"role": "user", "content": query}],
+                                 system=self.persona_prompt, max_tokens=1024)
+            output = resp.text
+        self._remember(query, output)
+        return OrchestratorResponse(
+            query=query, intent=decision.intent_class, plan=None, output=output,
+            tool_calls=[{"step": 1, "tool": None, "success": True}],
+            elapsed_ms=(time.time() - t0) * 1000,
+        )
+
+    def _remember(self, query: str, output: str) -> None:
+        # WHY: persistent session memory. Both sides of the turn go to the
+        # same jsonl so recall can cite who said what. Fails silent — memory
+        # loss must never break a response.
+        try:
+            if self.tools.has("memory_save"):
+                self.tools.call("memory_save", f"user: {query[:300]}")
+                self.tools.call("memory_save", f"friday: {output[:600]}")
+        except Exception as exc:
+            logger.debug("memory_save skipped: %s", exc)
 
     def _execute_plan(self, plan: Plan, query: str) -> list[dict[str, Any]]:
         calls: list[dict[str, Any]] = []
@@ -95,8 +129,12 @@ class Orchestrator:
             self._log("STEP_FAIL", f"[{step.id}] {exc}")
 
     def _dispatch(self, step: PlanStep, query: str) -> str:
-        if not step.tool or not self.tools.has(step.tool):
+        if not step.tool:
             return self._reason(step.action, query)
+        # WHY: the planner should have stripped invalid tools already. If one
+        # survives to here it's a real bug — fail loudly so audit logs are honest.
+        if not self.tools.has(step.tool):
+            raise ValueError(f"unknown tool: {step.tool!r}")
         tool_input = step.input_template or query
         return self.tools.call(step.tool, tool_input)
 

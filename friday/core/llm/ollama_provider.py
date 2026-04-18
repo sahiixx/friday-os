@@ -4,6 +4,8 @@ import time
 import urllib.error
 import urllib.request
 
+from typing import Iterator
+
 from friday.core.llm.base import LLMProvider, LLMResponse
 
 
@@ -36,6 +38,30 @@ class OllamaProvider(LLMProvider):
             self._available = False
         return self._available
 
+    def stream(self, messages: list[dict], system: str = "",
+               max_tokens: int = 1024) -> Iterator[str]:
+        # WHY: token-by-token streaming makes a 15s reply *feel* sub-second.
+        # The UI renders each chunk as it arrives via SSE.
+        if not self.is_available():
+            raise RuntimeError(f"OllamaProvider unavailable at {self.host}")
+        payload = {"model": self.model, "messages": _with_system(messages, system),
+                   "stream": True, "options": {"num_predict": max_tokens},
+                   "keep_alive": -1}
+        req = urllib.request.Request(
+            f"{self.host}/api/chat", data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"}, method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=120) as r:
+            for line in r:
+                if not line.strip():
+                    continue
+                chunk = json.loads(line.decode("utf-8"))
+                piece = (chunk.get("message") or {}).get("content", "")
+                if piece:
+                    yield piece
+                if chunk.get("done"):
+                    return
+
     def chat(self, messages: list[dict], system: str = "",
              max_tokens: int = 2048) -> LLMResponse:
         if not self.is_available():
@@ -45,6 +71,9 @@ class OllamaProvider(LLMProvider):
             "messages": _with_system(messages, system),
             "stream": False,
             "options": {"num_predict": max_tokens},
+            # WHY: keep_alive=-1 pins the model in RAM between prompts. Default
+            # 5-min unload causes 30s cold starts that look like a hung UI.
+            "keep_alive": -1,
         }
         t0 = time.time()
         text = _post_chat(f"{self.host}/api/chat", payload)

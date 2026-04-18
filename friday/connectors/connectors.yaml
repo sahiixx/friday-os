@@ -1,0 +1,107 @@
+# FRIDAY OS — connectors registry.
+# Lists the external MCPs and APIs FRIDAY can delegate to. Wiring of each
+# connector lives in its respective MCP server (configured in Claude Code) —
+# this file is metadata so FRIDAY can enumerate them and surface them in the UI.
+version: 1
+
+connectors:
+  # Productivity
+  - name: notion
+    category: docs
+    mcp: notion
+    capabilities: [search, read, write, comment]
+  - name: gmail
+    category: email
+    mcp: gmail
+    capabilities: [search_threads, draft, labels]
+  - name: clickup
+    category: tasks
+    mcp: clickup
+    capabilities: [create_task, list_tasks, docs, custom_fields]
+  - name: jira
+    category: tasks
+    mcp: jira
+    capabilities: [create_issue, search_jql, comment, sprints]
+  - name: zoom
+    category: meetings
+    mcp: zoom
+    capabilities: [meetings, phone, team_chat, recordings]
+  - name: fireflies
+    category: meetings
+    mcp: fireflies
+    capabilities: [transcripts, summaries, soundbites, analytics]
+
+  # Design
+  - name: figma
+    category: design
+    mcp: figma
+    capabilities: [get_context, code_connect, design_system]
+  - name: canva
+    category: design
+    mcp: canva
+    capabilities: [generate_design, export, brand_kits]
+  - name: gamma
+    category: design
+    mcp: gamma
+    capabilities: [generate_deck, themes, read]
+
+  # GTM
+  - name: hubspot
+    category: crm
+    mcp: hubspot
+    capabilities: [crm_objects, properties, campaigns, owners]
+  - name: apollo
+    category: prospecting
+    mcp: apollo
+    capabilities: [prospect, enrich_lead, sequence_load]
+  - name: common_room
+    category: community
+    mcp: common-room
+    capabilities: [accounts, prospects, enrich, events]
+
+  # Infra
+  - name: cloudflare
+    category: infra
+    mcp: cloudflare
+    capabilities: [workers, d1, kv, r2, hyperdrive, docs]
+  - name: supabase
+    category: infra
+    mcp: supabase
+    capabilities: [projects, sql, edge_functions, migrations, branches]
+  - name: vercel
+    category: infra
+    mcp: vercel
+    capabilities: [deploy, list_deployments, logs, projects]
+  - name: huggingface
+    category: ml
+    mcp: huggingface
+    capabilities: [hub_search, papers, spaces, doc_search]
+
+  # Desktop + browser
+  - name: computer_use
+    category: desktop
+    mcp: computer-use
+    capabilities: [screenshot, click, type, scroll, open_app]
+    gated_by: DESKTOP_CONTROL_ENABLED
+  - name: claude_in_chrome
+    category: browser
+    mcp: claude-in-chrome
+    capabilities: [navigate, click, read_page, form_input, network_logs]
+
+  # Research
+  - name: biorxiv
+    category: research
+    mcp: biorxiv
+    capabilities: [search_preprints, categories, funder_search]
+  - name: clinicaltrials
+    category: research
+    mcp: c-trials
+    capabilities: [search_trials, investigators, endpoints]
+  - name: chembl
+    category: research
+    mcp: chembl
+    capabilities: [compound_search, bioactivity, mechanisms, admet]
+  - name: pdf_viewer
+    category: research
+    mcp: pdf-viewer
+    capabilities: [display, annotate, read_bytes, save]

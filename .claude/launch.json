@@ -1,0 +1,42 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "friday-a2a",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "friday.core.a2a.server"],
+      "port": 8001,
+      "env": {
+        "FRIDAY_LLM": "auto",
+        "OLLAMA_MODEL": "llama3.1:8b",
+        "OLLAMA_HOST": "http://127.0.0.1:11434"
+      },
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "ollama",
+      "runtimeExecutable": "ollama",
+      "runtimeArgs": ["serve"],
+      "port": 11434,
+      "env": {
+        "OLLAMA_KEEP_ALIVE": "-1",
+        "OLLAMA_HOST": "127.0.0.1:11434",
+        "OLLAMA_MODELS": "C:/Users/Lenovo Ryzen/.ollama/models"
+      }
+    },
+    {
+      "name": "desktop-vite",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 1420,
+      "cwd": "${workspaceFolder}/desktop"
+    },
+    {
+      "name": "desktop-tauri",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "tauri", "dev"],
+      "port": 1420,
+      "cwd": "${workspaceFolder}/desktop"
+    }
+  ]
+}
