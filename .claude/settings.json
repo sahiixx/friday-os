@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "description": "FRIDAY OS — voice-first personal AI OS. Loads persona from ~/.openjarvis/.",
+  "env": {
+    "FRIDAY_HOME": "$HOME/.openjarvis",
+    "FRIDAY_LLM": "auto",
+    "OLLAMA_HOST": "http://localhost:11434",
+    "OLLAMA_MODEL": "llama3.1",
+    "SHELL_EXEC_ENABLED": "false",
+    "DESKTOP_CONTROL_ENABLED": "false",
+    "A2A_ENABLED": "false"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(python -c:*)",
+      "Bash(pytest:*)",
+      "Bash(uv run:*)",
+      "Bash(uvicorn:*)",
+      "Read(~/.openjarvis/**)"
+    ]
+  },
+  "mcpServers": [],
+  "hooks": []
+}

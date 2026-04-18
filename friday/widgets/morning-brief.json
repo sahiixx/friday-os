@@ -1,0 +1,80 @@
+{
+  "name": "friday.morning-brief",
+  "version": "1.0.0",
+  "displayName": "FRIDAY Morning Brief",
+  "description": "Your daily intelligence briefing with calendar, priorities, and insights.",
+  "type": "card",
+  "size": "large",
+  "refreshInterval": 300,
+  "dataSources": [
+    {
+      "name": "calendar",
+      "type": "tool",
+      "tool": "memory_recall",
+      "input": "calendar:today"
+    },
+    {
+      "name": "priorities",
+      "type": "tool",
+      "tool": "memory_recall",
+      "input": "priority:active"
+    },
+    {
+      "name": "news",
+      "type": "tool",
+      "tool": "search_web",
+      "input": "latest tech news {{date}}",
+      "cache": 3600
+    }
+  ],
+  "layout": {
+    "header": {
+      "title": "Good {{greeting_time}}, {{user.name}}",
+      "subtitle": "{{date|format:'dddd, MMMM Do'}}"
+    },
+    "sections": [
+      {
+        "type": "chips",
+        "title": "Today's Focus",
+        "items": "{{priorities|slice:0:3}}",
+        "template": {
+          "label": "{{item.title}}",
+          "color": "{{item.urgent ? 'red' : 'blue'}}"
+        }
+      },
+      {
+        "type": "list",
+        "title": "Calendar",
+        "items": "{{calendar.events}}",
+        "emptyState": "No events scheduled",
+        "template": {
+          "title": "{{item.title}}",
+          "time": "{{item.start|format:'h:mm A'}}",
+          "location": "{{item.location}}"
+        }
+      },
+      {
+        "type": "text",
+        "title": "Briefing",
+        "content": "{{news.summary}}"
+      }
+    ],
+    "actions": [
+      {
+        "label": "Full Brief",
+        "command": "friday.brief",
+        "icon": "sparkles"
+      },
+      {
+        "label": "Voice",
+        "command": "friday.voice-mode",
+        "icon": "mic"
+      }
+    ]
+  },
+  "styles": {
+    "background": "gradient:blue-purple",
+    "textColor": "white",
+    "accentColor": "#6366f1"
+  }
+}

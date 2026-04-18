@@ -1,0 +1,77 @@
+{
+  "name": "friday.calendar-day",
+  "version": "1.0.0",
+  "displayName": "Calendar Day",
+  "description": "Hour-by-hour view of your day with smart prep times.",
+  "type": "timeline",
+  "size": "medium",
+  "refreshInterval": 60,
+  "dataSources": [
+    {
+      "name": "events",
+      "type": "tool",
+      "tool": "memory_recall",
+      "input": "calendar:{{date|format:'YYYY-MM-DD'}}"
+    },
+    {
+      "name": "prep",
+      "type": "tool",
+      "tool": "memory_recall",
+      "input": "prep:{{date|format:'YYYY-MM-DD'}}"
+    }
+  ],
+  "layout": {
+    "header": {
+      "title": "{{date|format:'MMMM Do'}}",
+      "nav": ["prev", "today", "next"]
+    },
+    "timeline": {
+      "startHour": 7,
+      "endHour": 22,
+      "currentTimeIndicator": true,
+      "slots": [
+        {
+          "type": "prep",
+          "items": "{{prep.tasks}}",
+          "template": {
+            "title": "📝 {{item.title}}",
+            "duration": "{{item.minutes}}m",
+            "color": "amber"
+          }
+        },
+        {
+          "type": "event",
+          "items": "{{events}}",
+          "template": {
+            "title": "{{item.title}}",
+            "time": "{{item.start|format:'h:mm A'}} - {{item.end|format:'h:mm A'}}",
+            "location": "{{item.location}}",
+            "color": "{{item.conflict ? 'red' : item.type}}",
+            "actions": [
+              {
+                "icon": "map",
+                "command": "maps.directions",
+                "params": {"to": "{{item.location}}"}
+              },
+              {
+                "icon": "users",
+                "command": "friday.prospect",
+                "params": {"company": "{{item.attendees[0].company}}"}
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "styles": {
+    "hourLines": "subtle",
+    "currentTimeColor": "#f59e0b",
+    "eventColors": {
+      "meeting": "#6366f1",
+      "focus": "#10b981",
+      "break": "#6b7280",
+      "conflict": "#ef4444"
+    }
+  }
+}

@@ -1,0 +1,105 @@
+{
+  "name": "friday.prospect-card",
+  "version": "1.0.0",
+  "displayName": "Prospect Intelligence",
+  "description": "Deep research on people and companies before meetings.",
+  "type": "card",
+  "size": "medium",
+  "refreshInterval": 0,
+  "params": [
+    {
+      "name": "company",
+      "type": "string",
+      "required": true,
+      "description": "Company name or domain"
+    },
+    {
+      "name": "person",
+      "type": "string",
+      "required": false,
+      "description": "Specific person to research"
+    }
+  ],
+  "dataSources": [
+    {
+      "name": "company",
+      "type": "tool",
+      "tool": "search_web",
+      "input": "{{company}} company overview funding employees",
+      "cache": 86400
+    },
+    {
+      "name": "news",
+      "type": "tool",
+      "tool": "search_web",
+      "input": "{{company}} news last 30 days",
+      "cache": 3600
+    },
+    {
+      "name": "personData",
+      "type": "tool",
+      "tool": "search_web",
+      "input": "{{person}} {{company}} linkedin",
+      "cache": 86400,
+      "condition": "{{person != null}}"
+    }
+  ],
+  "layout": {
+    "header": {
+      "title": "{{company}}",
+      "badge": "{{news.sentiment}}",
+      "avatar": "https://logo.clearbit.com/{{company|domain}}"
+    },
+    "sections": [
+      {
+        "type": "stats",
+        "layout": "horizontal",
+        "items": [
+          {"label": "Employees", "value": "{{company.employees}}"},
+          {"label": "Founded", "value": "{{company.founded}}"},
+          {"label": "Funding", "value": "{{company.funding}}"}
+        ]
+      },
+      {
+        "type": "text",
+        "title": "Recent News",
+        "content": "{{news.headlines|join:' • '}}"
+      },
+      {
+        "type": "list",
+        "title": "Talking Points",
+        "items": "{{news.talking_points}}",
+        "template": {
+          "icon": "💡",
+          "text": "{{item}}"
+        }
+      },
+      {
+        "type": "profile",
+        "title": "{{person}}",
+        "condition": "{{person != null}}",
+        "fields": [
+          {"label": "Role", "value": "{{personData.title}}"},
+          {"label": "Background", "value": "{{personData.background}}"}
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "label": "Deep Research",
+        "command": "friday.research",
+        "params": {"query": "{{company}} {{person}}"}
+      },
+      {
+        "label": "Save to Memory",
+        "command": "memory_save",
+        "params": {"key": "prospect:{{company}}", "value": "{{json}}"}
+      }
+    ]
+  },
+  "styles": {
+    "background": "white",
+    "border": "1px solid #e5e7eb",
+    "accentColor": "#6366f1"
+  }
+}

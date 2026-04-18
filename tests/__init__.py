@@ -1,0 +1,1 @@
+"""FRIDAY OS test suite."""
