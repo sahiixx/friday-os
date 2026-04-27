@@ -1,3 +1,3 @@
-from friday.core.memory import persona
+from friday.core.memory import persona, titans
 
-__all__ = ["persona"]
+__all__ = ["persona", "titans"]

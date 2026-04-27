@@ -82,11 +82,19 @@ class Orchestrator:
 
     def _fast_chat(self, query: str, decision: RouterDecision,
                    t0: float) -> OrchestratorResponse:
+        memories = self._recall(query)
+        system = self.persona_prompt
+        if memories:
+            context = "\n\n".join(
+                f"[Memory {i+1}] {m.get('mission', '')}: {m.get('reason', '')}"
+                for i, m in enumerate(memories)
+            )
+            system = f"{system}\n\nRelevant past memories:\n{context}"
         if not self.llm.is_available():
             output = f"[conversational fallback] {query}"
         else:
             resp = self.llm.chat([{"role": "user", "content": query}],
-                                 system=self.persona_prompt, max_tokens=1024)
+                                 system=system, max_tokens=1024)
             output = resp.text
         self._remember(query, output)
         return OrchestratorResponse(
@@ -103,8 +111,26 @@ class Orchestrator:
             if self.tools.has("memory_save"):
                 self.tools.call("memory_save", f"user: {query[:300]}")
                 self.tools.call("memory_save", f"friday: {output[:600]}")
+            # Titans surprise-weighted memory
+            from friday.core.memory import titans
+            titans.remember(
+                mission=query[:200],
+                verdict="GO" if "error" not in output.lower() else "NO-GO",
+                reason=output[:300],
+                delta=0.0,
+                metadata={"agent": "friday", "query": query[:200]},
+            )
         except Exception as exc:
             logger.debug("memory_save skipped: %s", exc)
+
+    def _recall(self, query: str) -> list[dict[str, Any]]:
+        """Return surprise-weighted memories for query context."""
+        try:
+            from friday.core.memory import titans
+            return titans.recall(query, top_k=3)
+        except Exception as exc:
+            logger.debug("titans recall skipped: %s", exc)
+            return []
 
     def _execute_plan(self, plan: Plan, query: str) -> list[dict[str, Any]]:
         calls: list[dict[str, Any]] = []
