@@ -2,33 +2,38 @@
 
 ## What this is
 
-FRIDAY OS — the consolidation target for the six parallel Jarvis/AIOS projects in this workspace. Roadmap lives at `~/.claude/plans/i-want-you-go-crystalline-lemur.md`.
+FRIDAY OS — voice-first personal AI OS. Part of the sahiix ecosystem with agency-agents, sahiixx-bus, and sovereign-swarm-v2.
 
 ## Ground rules when editing this repo
 
-- **Read from `~/.openjarvis/` — don't duplicate state.** SOUL.md, USER.md, MEMORY.md, and the five SQLite DBs are live. FRIDAY OS is a consumer, not a second source of truth.
-- **Port, don't re-invent.** Canonical sources:
-  - Orchestrator / planner / router → `~/Documents/Claude/Projects/SUPER AGI/super_agi/core/`
-  - Registry pattern → `~/OpenJarvis/src/openjarvis/`
-  - `.claude/` templates + RPI workflow → `~/claude-code-best-practice/.claude/`
-  - Subagent personas → `~/Projects/aios-local/.external/agency-agents/.cursor/rules/`
-- **OBLITERATUS is out of scope.** It's interpretability research. Link, don't merge.
-
-## Code standards (inherited from workspace)
-
-- Max 30 lines/function, 300 lines/file.
-- Type hints on every public signature.
-- `f"..."` strings, list comprehensions, `obj?.x ?? default` equivalents (`getattr(obj, "x", default)`).
-- WHY comments only.
-- Never swallow errors.
+- **Ollama-native**: uses local models via ChatOllama. No Anthropic API dependency.
+- **Integration points**: sahiixx-bus (port 9000) for A2A/MCP routing, agency-agents for persona orchestration.
+- **Voice**: Twilio pipeline with Whisper STT + local TTS.
+- **Type hints** on every public signature.
+- **Never swallow errors** — always raise or log.
 
 ## Entry points
 
 ```bash
 python -c "from friday.core import Orchestrator; print(Orchestrator().run('hello'))"
 python -c "from friday.core.memory import persona; print(persona.load()[:200])"
+# Twilio voice server:
+python scripts/voice_server.py
 ```
 
-## Roadmap phases
+## Tech Stack
 
-See the two plan files. PR 1 Part A = scaffold (done). PR 1 Part B = real planner/router + Anthropic memory tool. PR 2 = tool surface + A2A + computer-use. PR 3 = Claude Code plugin + Tauri shell + widgets.
+- Python 3.12+ / Ollama (localhost:11434)
+- MCP via sahiixx-bus, A2A protocol for inter-agent routing
+- Twilio + Whisper + faster-whisper for voice
+- Titans memory system
+
+## Code standards
+
+- Max 30 lines/function, 300 lines/file.
+- `f"..."` strings, list comprehensions.
+- WHY comments only.
+
+## Roadmap
+
+PR 1 = scaffold (done). PR 2 = tool surface + A2A + computer-use. PR 3 = Claude Code plugin + Tauri shell + widgets.
