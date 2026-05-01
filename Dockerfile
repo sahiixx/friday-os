@@ -8,9 +8,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libportaudio2 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY pyproject.toml .
-COPY friday/ ./friday/
-COPY README.md .
+COPY friday-os/pyproject.toml .
+COPY friday-os/friday/ ./friday/
+COPY friday-os/README.md .
+COPY sahiixx-titans-memory /tmp/titans-memory
+
+# Fix local path dependency to work inside container
+RUN sed -i 's|file:///home/sahiix/sahiixx-titans-memory|file:///tmp/titans-memory|g' pyproject.toml
 
 # Install with all extras for full functionality
 RUN pip install --no-cache-dir -e ".[dev,a2a,voice,memory]"

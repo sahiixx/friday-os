@@ -2,7 +2,7 @@
 name = "friday-os"
 version = "0.0.1"
 description = "Voice-first, memory-persistent, MCP-powered personal AI OS."
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 authors = [{ name = "Sahi", email = "sahiixofficial@gmail.com" }]
 readme = "README.md"
 

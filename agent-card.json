@@ -1,0 +1,9 @@
+{
+  "name": "friday-os",
+  "version": "1.0.0",
+  "url": "http://localhost:8080",
+  "description": "Voice-first personal AI OS — Twilio integration, task automation, A2A bridge",
+  "capabilities": ["voice_assistant", "personal_ai", "twilio_integration", "task_automation", "a2a_bridge"],
+  "authentication": "bearer-token",
+  "well_known": "/.well-known/agent.json"
+}

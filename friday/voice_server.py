@@ -52,9 +52,9 @@ async def process_query(text: str) -> str:
     """Send text through the FRIDAY A2A pipeline."""
     try:
         async with httpx.AsyncClient(timeout=60) as client:
-            # Try FRIDAY A2A invoke endpoint
+            # Try local A2A invoke endpoint (self-call for internal routing)
             r = await client.post(
-                "http://127.0.0.1:8000/a2a/invoke",
+                "http://127.0.0.1:8080/a2a/invoke",
                 json={"skill": "chat", "input": text},
             )
             if r.status_code == 200:
@@ -232,11 +232,107 @@ def make_voice_app():
             media_type="application/json"
         )
 
+    async def agent_card_endpoint(request: Request):
+        import json
+        agent_card = json.load(open(str(Path(__file__).parent.parent / "agent-card.json")))
+        return Response(content=json.dumps(agent_card), media_type="application/json")
+
+    async def a2a_invoke_endpoint(request: Request):
+        """
+        A2A invoke endpoint.
+        Accepts {"skill": "chat", "input": "query"} and routes through:
+          1. agency-agents capability discovery + Ollama chat
+          2. falls back to direct Ollama call (deepseek-v4-flash:cloud)
+        Returns {"ok": true, "output": "..."} or {"ok": false, "error": "..."}
+        """
+        import json
+        try:
+            body = await request.json()
+        except Exception:
+            return Response(
+                content=json.dumps({"ok": False, "error": "invalid JSON body"}),
+                media_type="application/json",
+                status_code=400,
+            )
+
+        skill = body.get("skill", "chat")
+        user_input = body.get("input", "")
+        if not user_input.strip():
+            return Response(
+                content=json.dumps({"ok": False, "error": "empty input"}),
+                media_type="application/json",
+                status_code=400,
+            )
+
+        # Step 1: Try agency-agents at localhost:8766
+        try:
+            async with httpx.AsyncClient(timeout=120) as client:
+                # Discover capabilities
+                r = await client.get("http://localhost:8766/.well-known/agent.json")
+                if r.status_code == 200:
+                    agent_meta = r.json()
+                    logger.info("agency-agents discovered: %s", agent_meta.get("name", "unknown"))
+
+                    # Try agency-agents Ollama chat completion
+                    r2 = await client.post(
+                        "http://localhost:8766/a2a/chat",
+                        json={
+                            "skill": skill,
+                            "input": user_input,
+                            "max_tokens": 1024,
+                        },
+                        timeout=30,
+                    )
+                    if r2.status_code == 200:
+                        data = r2.json()
+                        output = data.get("output", data.get("response", str(data)))
+                        return Response(
+                            content=json.dumps({"ok": True, "output": output, "source": "agency-agents"}),
+                            media_type="application/json",
+                        )
+                    logger.warning("agency-agents chat returned %d, falling back", r2.status_code)
+        except Exception as e:
+            logger.warning("agency-agents unavailable: %s", e)
+
+        # Step 2: Fallback — direct Ollama call
+        try:
+            async with httpx.AsyncClient(timeout=60) as client:
+                r = await client.post(
+                    "http://127.0.0.1:11434/api/chat",
+                    json={
+                        "model": "deepseek-v4-flash:cloud",
+                        "messages": [{"role": "user", "content": user_input}],
+                        "stream": False,
+                        "options": {"num_predict": 1024},
+                    },
+                )
+                if r.status_code == 200:
+                    data = r.json()
+                    output = data.get("message", {}).get("content", str(data))
+                    return Response(
+                        content=json.dumps({"ok": True, "output": output, "source": "ollama"}),
+                        media_type="application/json",
+                    )
+                return Response(
+                    content=json.dumps({"ok": False, "error": f"Ollama returned {r.status_code}"}),
+                    media_type="application/json",
+                    status_code=502,
+                )
+        except Exception as e:
+            logger.error("A2A invoke failed: %s", e)
+            return Response(
+                content=json.dumps({"ok": False, "error": str(e)}),
+                media_type="application/json",
+                status_code=500,
+            )
+
     app = Starlette(routes=[
         Route("/twilio/voice", endpoint=voice_endpoint, methods=["GET", "POST"]),
         Route("/twilio/process", endpoint=process_endpoint, methods=["GET", "POST"]),
         Route("/twilio/fallback", endpoint=fallback_endpoint, methods=["GET", "POST"]),
         Route("/health", endpoint=health_endpoint, methods=["GET"]),
+        Route("/.well-known/agent.json", endpoint=agent_card_endpoint, methods=["GET"]),
+        Route("/a2a/invoke", endpoint=a2a_invoke_endpoint, methods=["POST"]),
     ])
 
     return app

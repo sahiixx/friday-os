@@ -7,7 +7,7 @@ FRIDAY OS — voice-first personal AI OS. Part of the sahiix ecosystem with agen
 ## Ground rules when editing this repo
 
 - **Ollama-native**: uses local models via ChatOllama. No Anthropic API dependency.
-- **Integration points**: sahiixx-bus (port 9000) for A2A/MCP routing, agency-agents for persona orchestration.
+- **Integration points**: sahiixx-bus (port 8090) for A2A/MCP routing, agency-agents for persona orchestration.
 - **Voice**: Twilio pipeline with Whisper STT + local TTS.
 - **Type hints** on every public signature.
 - **Never swallow errors** — always raise or log.
