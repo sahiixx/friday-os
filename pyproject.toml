@@ -10,8 +10,8 @@ dependencies = [
   "anthropic>=0.40",
   "pydantic>=2.6",
   "httpx>=0.27",
-  "titans-memory @ file:///home/sahiix/sahiixx-titans-memory",
-    "sahiixx-bus>=0.1.0",
+  "titans-memory @ git+https://github.com/sahiixx/sahiixx-titans-memory.git",
+  "sahiixx-bus @ git+https://github.com/sahiixx/sahiixx-bus.git",
 ]
 
 [project.optional-dependencies]
