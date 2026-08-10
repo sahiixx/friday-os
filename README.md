@@ -1,183 +1,133 @@
-# FRIDAY OS — Voice-First AI Operating System
+# friday-os
 
-> **A voice-first, memory-persistent, MCP-powered personal AI OS.**  
-> PERCEIVE → ROUTE → PLAN → EXECUTE → SYNTHESIZE — with your voice.
-
-[![Voice-First](https://img.shields.io/badge/voice--first-LiveKit-red)](https://livekit.io)
-[![Local-First](https://img.shields.io/badge/local--first-ollama-green)](https://ollama.com)
-[![Tests](https://img.shields.io/badge/tests-pytest-blue)](tests/)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-
----
-
-## The Pitch
+![Python](https://img.shields.io/badge/python-3.11+-blue) ![Docker](https://img.shields.io/badge/docker-ready-blue) ![Agentic](https://img.shields.io/badge/agentic-harness-purple)
 
 **Siri** answers weather. **Alexa** sets timers. **FRIDAY** builds your startup.
 
-FRIDAY OS is a voice-first AI operating system that:
-- 🎙️ **Listens** — LiveKit real-time voice pipeline (STT → Brain → TTS)
-- 🧠 **Thinks** — PERCEIVE → ROUTE → PLAN → EXECUTE → SYNTHESIZE
-- 💾 **Remembers** — Persistent memory across sessions (integrates with `titans-memory`)
-- 🔧 **Acts** — Tool registry with web search, code execution, shell, file I/O
-- 🏗️ **Delegates** — Multi-step planning with dependency resolution
-- 🎭 **Adapts** — Loads your persona from `~/.openjarvis/{SOUL,USER,MEMORY}.md`
+## Table of Contents
 
-All local. All private. No cloud required.
+- [Overview](#overview)
+- [Quick Start](#quick-start)
+- [Agentic Architecture](#agentic-architecture)
+- [Model Routing](#model-routing)
+- [Project Layout](#project-layout)
+- [Development](#development)
+- [Related Repositories](#related-repositories)
 
----
+## Overview
 
-## One-Command Start
+**Siri** answers weather. **Alexa** sets timers. **FRIDAY** builds your startup.
 
-```bash
-# Clone and install
-git clone https://github.com/sahiixx/friday-os.git
-cd friday-os
-pip install -e ".[voice]"
+| | |
+|---|---|
+| **Stack** | python |
+| **Frameworks** | anthropic, docker, fastapi, openai, pydantic |
+| **Tests** | yes |
+| **Commits** | 2 |
+| **Last activity** | 2026-08-10 |
+| **Visibility** | public |
 
-# Start FRIDAY (console mode — no voice deps needed)
-python -m friday.cli
+## Quick Start
 
-# Or start voice agent (requires LiveKit + Ollama)
-python -m friday.voice.agent_friday console
-```
-
----
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  🎙️ Voice Layer (LiveKit Agents SDK)                        │
-│   ├── Silero VAD (voice activity detection)                 │
-│   ├── OpenAI Whisper STT (or local equivalent)              │
-│   └── OpenAI TTS (or local equivalent)                     │
-├─────────────────────────────────────────────────────────────┤
-│  🧠 FRIDAY Brain                                             │
-│   ├── Router — intent classification (heuristic + LLM)      │
-│   ├── Planner — multi-step plan with dependency resolution  │
-│   ├── Orchestrator — PERCEIVE→ROUTE→PLAN→EXECUTE→SYNTHESIZE│
-│   └── Memory — persona + episodic + titans-memory           │
-├─────────────────────────────────────────────────────────────┤
-│  🔧 Tool Registry                                            │
-│   ├── search_web — DuckDuckGo                               │
-│   ├── run_code — Python sandbox                             │
-│   ├── shell_exec — gated shell access                       │
-│   ├── memory_save / memory_recall — persistent storage      │
-│   └── file_read / file_write — file I/O                     │
-├─────────────────────────────────────────────────────────────┤
-│  🦙 LLM Provider (pluggable)                                 │
-│   ├── Claude (API)                                          │
-│   ├── OpenAI (API)                                          │
-│   └── Ollama (local) — qwen2.5-coder, llama3.1, etc.       │
-└─────────────────────────────────────────────────────────────┘
-```
-
----
-
-## How It Works
-
-### 1. Router — What do you want?
-
-```python
-# Heuristic classification (zero-cost fast path)
-"Search for latest AI news"        → RESEARCH
-"Calculate 2^128"                 → ANALYTICAL
-"Write a poem about recursion"    → CREATIVE
-"Build a Chrome extension"        → AGENTIC (requires planning)
-"Hello"                           → CONVERSATIONAL
-```
-
-If confidence < 0.6, the LLM reclassifies.
-
-### 2. Planner — How do we do it?
-
-```json
-{
-  "intent": "Build a Chrome extension",
-  "complexity": "high",
-  "steps": [
-    {"id": 1, "action": "Create manifest.json", "tool": "file_write"},
-    {"id": 2, "action": "Write content script", "tool": "file_write", "depends_on": [1]},
-    {"id": 3, "action": "Test extension", "tool": "shell_exec", "depends_on": [2]}
-  ]
-}
-```
-
-### 3. Executor — Do it.
-
-Each step runs in order, respecting dependencies. Failed steps are logged but don't crash the system.
-
-### 4. Synthesizer — Explain it.
-
-FRIDAY gives you a direct, actionable final answer — not a raw dump of tool outputs.
-
----
-
-## Memory
-
-FRIDAY has three memory layers:
-
-| Layer | Source | Persistence |
-|-------|--------|-------------|
-| **Persona** | `~/.openjarvis/{SOUL,USER,MEMORY}.md` | Cross-session |
-| **Episodic** | `memory/episodes/*.jsonl` | Cross-session |
-| **Titans** | `titans-memory` integration | Surprise-weighted, ranked |
-
-```python
-# Use titans-memory for ranked recall
-from friday.core.memory import titans
-
-context = titans.recall("auth module refactor")
-# Returns weighted memories sorted by surprise + recency
-```
-
----
-
-## Voice Modes
-
-| Mode | Command | What It Does |
-|------|---------|-------------|
-| **Console** | `python -m friday.cli` | Text-based chat |
-| **Local Voice** | `python -m friday.voice.agent_friday console` | Mic + speaker, no LiveKit |
-| **LiveKit Room** | `python -m friday.voice.agent_friday dev` | Join a LiveKit room |
-| **Web UI** | `python -m friday.server` | Browser-based chat (planned) |
-
----
-
-## Safety
-
-| Mode | Behavior |
-|------|----------|
-| `trusted_local` *(default)* | All tools enabled |
-| `read_only` | No file writes, no shell |
-| `paranoid` | Every action requires confirmation |
-
-Set via `FRIDAY_SAFETY_MODE` env var.
-
----
-
-## Ecosystem
-
-| Repo | Role |
-|------|------|
-| [`goose-aios`](https://github.com/sahiixx/goose-aios) | Local LLM backend — Ollama + FastAPI |
-| [`titans-memory`](https://github.com/sahiixx/titans-memory) | Surprise-weighted persistent memory |
-| [`claude-skills`](https://github.com/sahiixx/claude-skills) | 12 Claude Code skills for specialized tasks |
-| [`agent-design.md`](https://github.com/sahiixx/sahiixx-agent-design.md) | Visual identity spec |
-| [`hermesclaw`](https://github.com/AaronWong1999/hermesclaw) | WeChat bridge for mobile access |
-
----
-
-## Tests
+### Install
 
 ```bash
-pytest tests/ -v
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt   # or: pip install -e .
 ```
+
+### Run
+
+```bash
+# Entry point not auto-detected; inspect the layout below.
+```
+
+## Agentic Architecture
+
+This repository participates in the [sahiixx agentic harness](https://github.com/sahiixx/agentic-harness) — a shared
+contract for how agents plan, act, verify, and recover across all repos in this account.
+
+**Signal strength:** agentic density score `164` (references to agent,
+tool-call, LLM, RAG and orchestration primitives across the source tree).
+
+### Patterns in play
+
+| Pattern | Role here |
+|---|---|
+| **Prompt Chaining** | Deterministic multi-step pipelines where subtasks are known upfront |
+| **Routing** | Classify input, dispatch to the specialist path (cheap model for easy work) |
+| **Parallelization** | Independent subtasks fan out; results aggregated programmatically |
+| **Orchestrator–Workers** | Central planner decomposes dynamically when subtasks can't be predicted |
+| **Evaluator–Optimizer** | Generator/judge split with explicit rubric; bounded retry |
+| **ReAct** | Interleaved reason → act → observe for adaptive tool use |
+| **Reflection** | Self-critique before emitting a final answer |
+
+> Escalation rule: start with the simplest pattern that solves the problem. Add
+> Reflection only when verification fails, Planning only when dependencies emerge,
+> Multi-Agent only when work exceeds a single role or context window.
+
+### Reliability envelope
+
+- **Bounded execution** — every loop has a max-iteration and wall-clock ceiling.
+- **Tool sandboxing** — filesystem/network side effects are isolated and reversible.
+- **Guardrail layering** — validate at input, mid-loop, and output.
+- **Context engineering** — select, compress, isolate; never let raw history grow unbounded.
+- **Self-verification** — check intermediate output against constraints before continuing.
+
+## Model Routing
+
+Agent work in this repo routes through Azure AI Foundry. See [`AGENTS.md`](./AGENTS.md)
+for the full contract.
+
+| Purpose | Deployment | Endpoint |
+|---|---|---|
+| Default / general | `gpt-5.6-sol` | `/openai/v1/chat/completions` |
+| Deep reasoning | `claude-opus-5` | `/openai/v1/responses` **only** |
+| Embeddings | `text-embedding-3-small` | `/openai/v1/embeddings` |
+
+```bash
+export AZURE_FOUNDRY_API_KEY=...        # never commit this
+export AZURE_FOUNDRY_BASE_URL=https://<resource>.openai.azure.com/openai/v1
+```
+
+> **Gotcha:** Claude deployments on Azure return `404 api_not_supported` on
+> `/chat/completions`. They answer **only** via the Responses API.
+
+## Project Layout
+
+```
+AGENTS.md
+CLAUDE.md
+Dockerfile
+LICENSE
+README.md
+README_OLD.md
+agent-card.json
+desktop/
+friday/
+pyproject.toml
+tests/
+```
+
+## Development
+
+```bash
+# lint / format before committing
+ruff check . && ruff format .
+
+# run the CI check locally
+gh workflow run hermes-azure-check.yml
+```
+
+Secrets live in environment variables and CI secrets — never in tracked files.
+
+## Related Repositories
+
+Part of a 84-repository workspace sharing one agentic contract:
+
+- **[agentic-harness](https://github.com/sahiixx/agentic-harness)** — patterns, contracts, and reference implementations
+- `AGENTS.md` in every repo pins identical model routing
 
 ---
 
-## License
-
-MIT — see [LICENSE](LICENSE).
-
-> *"The future of AI isn't a chatbot. It's an operating system that listens, thinks, and acts — and never forgets."*
+<sub>README maintained by the agentic harness · last regenerated 2026-08-10</sub>
