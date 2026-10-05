@@ -2,9 +2,10 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install system deps for audio processing
+# Install system deps for audio processing and Git-based Python dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    git \
     libportaudio2 \
     && rm -rf /var/lib/apt/lists/*
 
